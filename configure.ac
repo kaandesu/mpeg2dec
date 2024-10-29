@@ -18,7 +18,7 @@ m4_pattern_allow([AC_C_BUILTIN_EXPECT])
 m4_pattern_allow([AC_LIBTOOL_NON_PIC])
 m4_pattern_allow([AC_C_ATTRIBUTE_ALIGNED])
 
-AC_PREREQ([2.72])
+AC_PREREQ([2.69])
 AC_INIT([libmpeg2],[0.5.1],[])
 AC_CONFIG_SRCDIR([src/mpeg2dec.c])
 AC_CONFIG_AUX_DIR(.auto)
