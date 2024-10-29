@@ -1,30 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
-
-ACLOCAL_AMFLAGS = -I m4
-m4_pattern_allow([AC_TRY_CFLAGS])
-m4_pattern_allow([AC_DEFINE])
-m4_pattern_allow([AC_MSG_CHECKING])
-m4_pattern_allow([AC_TRY_CFLAGS])
-m4_pattern_allow([LT_SET_OPTION])
-
-m4_pattern_allow([AC_COMPILE_IFELSE])
-m4_pattern_allow([AC_LANG_PROGRAM])
-m4_pattern_allow([AC_MSG_RESULT])
-m4_pattern_allow([AC_TRY_COMPILE])
-m4_pattern_allow([LT_SET_OPTION])
-m4_pattern_allow([AC_CHECK_GENERATE_INTTYPES])
-m4_pattern_allow([AC_C_ALWAYS_INLINE])
-m4_pattern_allow([AC_C_BUILTIN_EXPECT])
-m4_pattern_allow([AC_LIBTOOL_NON_PIC])
-m4_pattern_allow([AC_C_ATTRIBUTE_ALIGNED])
-
-AC_PREREQ([2.72])
+AC_PREREQ(2.54)
 AC_INIT([libmpeg2],[0.5.1],[])
+
 AC_CONFIG_SRCDIR([src/mpeg2dec.c])
 AC_CONFIG_AUX_DIR(.auto)
-AM_INIT_AUTOMAKE([foreign])
-LT_INIT
-
 AC_CONFIG_FILES([Makefile include/Makefile test/Makefile
     doc/Makefile src/Makefile libmpeg2/Makefile libmpeg2/convert/Makefile
     libvo/Makefile vc++/Makefile
@@ -32,20 +11,17 @@ AC_CONFIG_FILES([Makefile include/Makefile test/Makefile
 AC_CONFIG_HEADERS([include/config.h])
 AC_CANONICAL_HOST
 
-
-# Your existing checks and configurations...
-# AM_INIT_AUTOMAKE([1.5 -Wall foreign])
+AM_INIT_AUTOMAKE([1.5 -Wall foreign])
 AM_MAINTAINER_MODE
 
 dnl Checks for compiler
 AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
 AM_PROG_AS
 
 dnl Checks for headers. We do this before the CC-specific section because
 dnl autoconf generates tests for generic headers before the first header test.
-#  lmao
-# AC_CHECK_HEADERS([sys/time.h time.h sys/timeb.h io.h])
-# AC_CHECK_HEADERS([time.h sys/timeb.h io.h])
+AC_CHECK_HEADERS([sys/time.h time.h sys/timeb.h io.h])
 
 dnl CC-specific flags
 AC_SUBST([OPT_CFLAGS])
@@ -102,8 +78,11 @@ elif test x"$GCC" = x"yes"; then
 		[save_CFLAGS="$CFLAGS"
 		 CFLAGS="$OPT_CFLAGS $TRY_CFLAGS $CFLAGS"
 		 AC_MSG_CHECKING([if <altivec.h> is needed])
-		 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[typedef vector int t;
-		     vec_ld(0, (unsigned char *)0);]])],[have_altivec=yes; AC_MSG_RESULT(no)],[_au_m4_changequote([,])AC_TRY_COMPILE([#include <altivec.h>],
+		 AC_TRY_COMPILE([],
+		    [typedef vector int t;
+		     vec_ld(0, (unsigned char *)0);],
+		    [have_altivec=yes; AC_MSG_RESULT(no)],
+		    [AC_TRY_COMPILE([#include <altivec.h>],
 			[typedef vector int t; vec_ld(0, (unsigned char *)0);],
 			[AC_DEFINE([HAVE_ALTIVEC_H],,
 			    [Define to 1 if you have the <altivec.h> header.])
@@ -147,26 +126,15 @@ fi
 AM_CONDITIONAL(ARCH_ARM, ${arm_conditional})
 
 dnl Checks for libtool - this must be done after we set cflags
-AC_CANONICAL_HOST
-LT_INIT([win32-dll])
-LT_SET_OPTION
-
-LT_INIT
+AC_LIBTOOL_WIN32_DLL
+AC_PROG_LIBTOOL
 
 dnl Checks for libraries.
 
 dnl Checks for header files.
 AM_CPPFLAGS='-I$(top_srcdir)/include -I$(top_builddir)/include'
 AC_SUBST([AM_CPPFLAGS])
-
-AC_CHECK_HEADERS_ONCE([sys/time.h])
-# Obsolete code to be removed.
-if test $ac_cv_header_sys_time_h = yes; then
-  AC_DEFINE([TIME_WITH_SYS_TIME],[1],[Define to 1 if you can safely include both <sys/time.h>
-	     and <time.h>.  This macro is obsolete.])
-fi
-# End of obsolete code.
-
+AC_HEADER_TIME
 AC_CHECK_TYPES([struct timeval], [], [],
     [#include <sys/time.h>
     #include <time.h>])
@@ -180,10 +148,7 @@ AC_C_BUILTIN_EXPECT
 AC_C_BIGENDIAN
 AC_C_VOLATILE
 AC_TYPE_SIZE_T
-
-# Define RETSIGTYPE as void since C89 assumes this
-AC_DEFINE([RETSIGTYPE], [void], [Define as the return type of signal handlers (always void).])
-
+AC_TYPE_SIGNAL
 AC_SYS_LARGEFILE
 
 dnl Checks for library functions.
