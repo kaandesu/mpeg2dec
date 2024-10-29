@@ -59,14 +59,20 @@ elif test x"$GCC" = x"yes"; then
     dnl -Wall
     dnl -Werror moved to the end to not disturb the configure script
     TRY_CFLAGS="$OPT_CFLAGS -Wall -Wpointer-arith -Wcast-align -Wcast-qual -Wstrict-prototypes -Wshadow -Waggregate-return -Wmissing-prototypes -Wnested-externs -Wsign-compare"
-    AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([], [])],
+      [OPT_CFLAGS="$CFLAGS $TRY_CFLAGS"]
+    )
 
     dnl -O3
     changequote(<<,>>)
     TRY_CFLAGS=`echo "$OPT_CFLAGS $CFLAGS"|sed "s/-O[0-9]*//g"`
     changequote([,])
     TRY_CFLAGS="$TRY_CFLAGS -O3"
-    AC_TRY_CFLAGS([$TRY_CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([], [])],
+      [OPT_CFLAGS="$CFLAGS $TRY_CFLAGS"]
+    )
 
     AC_ARG_ENABLE([debug],
 	[  --enable-debug          debug mode configuration])
@@ -75,12 +81,18 @@ elif test x"$GCC" = x"yes"; then
     else
 	dnl -fomit-frame-pointer
 	TRY_CFLAGS="$OPT_CFLAGS -fomit-frame-pointer"
-	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([], [])],
+      [OPT_CFLAGS="$CFLAGS $TRY_CFLAGS"]
+    )
     fi
 
     dnl -fno-common
     TRY_CFLAGS="$OPT_CFLAGS -fno-common"
-    AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([], [])],
+      [OPT_CFLAGS="$CFLAGS $TRY_CFLAGS"]
+    )
 
     dnl arch-specific flags
     arm_conditional=false
@@ -94,32 +106,47 @@ elif test x"$GCC" = x"yes"; then
 	i686-*) TRY_CFLAGS="$OPT_CFLAGS -mcpu=pentiumpro";;
 	k6-*)   TRY_CFLAGS="$OPT_CFLAGS -mcpu=k6";;
 	esac
-	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"]);;
+AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([], [])],
+            [OPT_CFLAGS="$TRY_CFLAGS $CFLAGS"]
+        )
+        ;;
     ppc-* | powerpc-*)
 	have_altivec=no
-	for TRY_CFLAGS in "-mpim-altivec -force_cpusubtype_ALL" -faltivec -maltivec -fvec; do
-	    AC_TRY_CFLAGS([$OPT_CFLAGS $TRY_CFLAGS $CFLAGS],
-		[save_CFLAGS="$CFLAGS"
-		 CFLAGS="$OPT_CFLAGS $TRY_CFLAGS $CFLAGS"
-		 AC_MSG_CHECKING([if <altivec.h> is needed])
-		 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[typedef vector int t;
-		     vec_ld(0, (unsigned char *)0);]])],[have_altivec=yes; AC_MSG_RESULT(no)],[_au_m4_changequote([,])AC_TRY_COMPILE([#include <altivec.h>],
-			[typedef vector int t; vec_ld(0, (unsigned char *)0);],
-			[AC_DEFINE([HAVE_ALTIVEC_H],,
-			    [Define to 1 if you have the <altivec.h> header.])
-			 have_altivec=yes; AC_MSG_RESULT(yes)],
-			[AC_MSG_RESULT(unsupported)])])
-		 CFLAGS="$save_CFLAGS"])
-	    if test "$have_altivec" = "yes"; then
-		ARCH_OPT_CFLAGS="$TRY_CFLAGS"
-		AC_DEFINE([ARCH_PPC],,[ppc architecture])
-		break
-	    fi
-	done;;
+for TRY_CFLAGS in "-mpim-altivec -force_cpusubtype_ALL" -faltivec -maltivec -fvec; do
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$OPT_CFLAGS $TRY_CFLAGS $CFLAGS"
+    
+    AC_MSG_CHECKING([if <altivec.h> is needed])
+
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([[#include <altivec.h>]], [[typedef vector int t; vec_ld(0, (unsigned char *)0);]])],
+        [
+            have_altivec=yes
+            AC_DEFINE([HAVE_ALTIVEC_H], [1], [Define to 1 if you have the <altivec.h> header.])
+            AC_MSG_RESULT([yes])
+        ],
+        [
+            AC_MSG_RESULT([unsupported])
+            have_altivec=no
+        ]
+    )
+
+    CFLAGS="$save_CFLAGS"
+
+    if test "$have_altivec" = "yes"; then
+        ARCH_OPT_CFLAGS="$TRY_CFLAGS"
+        AC_DEFINE([ARCH_PPC], [1], [ppc architecture])
+        break
+    fi
+done;;
     sparc-* | sparc64-*)
 	AC_DEFINE([ARCH_SPARC],,[sparc architecture])
 	TRY_CFLAGS="$OPT_CFLAGS -mcpu=ultrasparc -mvis"
-	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"]);;
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([], [])],
+      [OPT_CFLAGS="$CFLAGS $TRY_CFLAGS"]
+    );;
     alpha*)
 	AC_DEFINE([ARCH_ALPHA],,[alpha architecture]);;
     arm*)
@@ -140,7 +167,10 @@ else
     case "$host" in
     sparc-sun-solaris*)
 	TRY_CFLAGS="$OPT_CFLAGS -xCC -fast -xO5"
-	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"]);;
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([], [])],
+      [OPT_CFLAGS="$CFLAGS $TRY_CFLAGS"]
+    );;
     esac
 fi
 
@@ -170,7 +200,7 @@ fi
 AC_CHECK_TYPES([struct timeval], [], [],
     [#include <sys/time.h>
     #include <time.h>])
-AC_CHECK_GENERATE_INTTYPES([include])
+AC_CHECK_HEADERS([stdint.h inttypes.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -192,7 +222,7 @@ AC_CHECK_FUNCS([gettimeofday ftime])
 case "$target" in
   dnl avoid -fPIC on 32-bit x86 platforms
   i?86-*|k?-*)
-    AC_LIBTOOL_NON_PIC([LIBMPEG2_CFLAGS="$LIBMPEG2_CFLAGS -prefer-non-pic"])
+    LIBMPEG2_CFLAGS="$LIBMPEG2_CFLAGS -prefer-non-pic"
   ;;
 esac
 AC_SUBST([LIBMPEG2_CFLAGS])
@@ -256,7 +286,10 @@ AC_ARG_ENABLE([warnings],
 if test x"$enable_warnings" = x"yes" -a x"$GCC" = x"yes"; then
     dnl compiler warnings
     TRY_CFLAGS="$OPT_CFLAGS -Werror"
-    AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([], [])],
+      [OPT_CFLAGS="$CFLAGS $TRY_CFLAGS"]
+    )
 elif test x"$TENDRA" = x"yes"; then
     dnl TenDRA portability checking compiler
     OPT_CFLAGS="$OPT_CFLAGS -DTenDRA_check"
